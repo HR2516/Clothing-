@@ -1,0 +1,280 @@
+```react
+import React, { useState, useMemo } from 'react';
+import { 
+  LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+  PieChart, Pie, Cell, BarChart, Bar, Legend 
+} from 'recharts';
+import { 
+  ShoppingBag, Users, DollarSign, TrendingUp, Package, 
+  ChevronRight, Bell, Search, Menu, Filter, Download
+} from 'lucide-react';
+
+// Mock Data
+const SALES_DATA = [
+  { month: 'Jan', revenue: 4500, orders: 120 },
+  { month: 'Feb', revenue: 5200, orders: 145 },
+  { month: 'Mar', revenue: 4800, orders: 132 },
+  { month: 'Apr', revenue: 6100, orders: 168 },
+  { month: 'May', revenue: 5900, orders: 155 },
+  { month: 'Jun', revenue: 7200, orders: 190 },
+];
+
+const CATEGORY_DATA = [
+  { name: 'Men\'s Wear', value: 400, color: '#3b82f6' },
+  { name: 'Women\'s Wear', value: 700, color: '#ec4899' },
+  { name: 'Kids', value: 200, color: '#10b981' },
+  { name: 'Accessories', value: 300, color: '#f59e0b' },
+];
+
+const TOP_PRODUCTS = [
+  { name: 'Cotton T-Shirt', sales: 450, growth: '+12%' },
+  { name: 'Slim Fit Jeans', sales: 380, growth: '+8%' },
+  { name: 'Summer Dress', sales: 320, growth: '+24%' },
+  { name: 'Leather Jacket', sales: 210, growth: '-2%' },
+];
+
+const RECENT_ORDERS = [
+  { id: '#ORD-7721', customer: 'Sarah Jenkins', status: 'Delivered', amount: '$124.00', date: '2 mins ago' },
+  { id: '#ORD-7720', customer: 'Michael Chen', status: 'Processing', amount: '$89.50', date: '15 mins ago' },
+  { id: '#ORD-7719', customer: 'Emma Wilson', status: 'Shipped', amount: '$210.00', date: '1 hour ago' },
+  { id: '#ORD-7718', customer: 'David Smith', status: 'Delivered', amount: '$56.00', date: '3 hours ago' },
+];
+
+// Reusable Components
+const StatCard = ({ title, value, icon: Icon, trend, trendUp }) => (
+  <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
+    <div className="flex justify-between items-start mb-4">
+      <div className="p-2 bg-slate-50 rounded-lg">
+        <Icon className="w-6 h-6 text-slate-600" />
+      </div>
+      <span className={`text-xs font-semibold px-2 py-1 rounded-full ${trendUp ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+        {trend}
+      </span>
+    </div>
+    <div>
+      <p className="text-sm text-slate-500 font-medium">{title}</p>
+      <h3 className="text-2xl font-bold text-slate-900 mt-1">{value}</h3>
+    </div>
+  </div>
+);
+
+const ChartWrapper = ({ title, children, height = 300 }) => (
+  <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 h-full">
+    <div className="flex justify-between items-center mb-6">
+      <h3 className="font-bold text-slate-800">{title}</h3>
+      <button className="text-slate-400 hover:text-slate-600 p-1">
+        <Filter className="w-4 h-4" />
+      </button>
+    </div>
+    <div style={{ height }}>
+      {children}
+    </div>
+  </div>
+);
+
+export default function App() {
+  const [isSidebarOpen, setSidebarOpen] = useState(false);
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex">
+      {/* Sidebar Overlay for Mobile */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/20 z-40 lg:hidden" 
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside className={`fixed inset-y-0 left-0 w-64 bg-white border-r border-slate-100 z-50 transform transition-transform duration-300 lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="p-6">
+          <div className="flex items-center gap-3 mb-10">
+            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center">
+              <ShoppingBag className="text-white w-6 h-6" />
+            </div>
+            <h1 className="text-xl font-bold text-slate-900">ModaStyle</h1>
+          </div>
+
+          <nav className="space-y-1">
+            {[
+              { icon: TrendingUp, label: 'Dashboard', active: true },
+              { icon: Package, label: 'Inventory' },
+              { icon: Users, label: 'Customers' },
+              { icon: DollarSign, label: 'Sales' },
+            ].map((item) => (
+              <button
+                key={item.label}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${item.active ? 'bg-indigo-50 text-indigo-600' : 'text-slate-500 hover:bg-slate-50'}`}
+              >
+                <item.icon className="w-5 h-5" />
+                {item.label}
+              </button>
+            ))}
+          </nav>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 lg:ml-64 p-4 md:p-8">
+        {/* Header */}
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <div className="flex items-center gap-4">
+            <button 
+              className="lg:hidden p-2 text-slate-500" 
+              onClick={() => setSidebarOpen(true)}
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900">Shop Overview</h2>
+              <p className="text-slate-500 text-sm">Welcome back, manager!</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="relative group flex-1 md:flex-none">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="Search analytics..." 
+                className="pl-10 pr-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full md:w-64 text-sm"
+              />
+            </div>
+            <button className="p-2 bg-white rounded-xl border border-slate-200 relative">
+              <Bell className="w-5 h-5 text-slate-600" />
+              <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span>
+            </button>
+            <div className="w-10 h-10 rounded-xl bg-slate-200 overflow-hidden hidden sm:block">
+              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User" />
+            </div>
+          </div>
+        </header>
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <StatCard title="Total Revenue" value="$48,290" icon={DollarSign} trend="+12.5%" trendUp={true} />
+          <StatCard title="Active Orders" value="156" icon={Package} trend="+4.2%" trendUp={true} />
+          <StatCard title="Total Customers" value="2,420" icon={Users} trend="+18.7%" trendUp={true} />
+          <StatCard title="Conversion Rate" value="3.2%" icon={TrendingUp} trend="-1.4%" trendUp={false} />
+        </div>
+
+        {/* Charts Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+          {/* Revenue Trend - Area Chart */}
+          <div className="lg:col-span-2">
+            <ChartWrapper title="Revenue Performance">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={SALES_DATA}>
+                  <defs>
+                    <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1}/>
+                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  />
+                  <Area type="monotone" dataKey="revenue" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorRev)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </ChartWrapper>
+          </div>
+
+          {/* Category Distribution - Pie Chart */}
+          <div className="lg:col-span-1">
+            <ChartWrapper title="Sales by Category">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={CATEGORY_DATA}
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {CATEGORY_DATA.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend verticalAlign="bottom" height={36}/>
+                </PieChart>
+              </ResponsiveContainer>
+            </ChartWrapper>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Top Selling Products */}
+          <ChartWrapper title="Top Performing Products">
+            <div className="space-y-4">
+              {TOP_PRODUCTS.map((product, i) => (
+                <div key={i} className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center font-bold text-slate-400">
+                      #{i + 1}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-slate-800">{product.name}</p>
+                      <p className="text-xs text-slate-500">{product.sales} units sold</p>
+                    </div>
+                  </div>
+                  <div className={`text-sm font-medium ${product.growth.startsWith('+') ? 'text-emerald-500' : 'text-rose-500'}`}>
+                    {product.growth}
+                  </div>
+                </div>
+              ))}
+              <button className="w-full mt-2 py-3 text-sm font-medium text-indigo-600 border border-indigo-100 rounded-xl hover:bg-indigo-50 transition-colors">
+                View All Products
+              </button>
+            </div>
+          </ChartWrapper>
+
+          {/* Recent Orders */}
+          <ChartWrapper title="Recent Orders">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-slate-100">
+                    <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Order ID</th>
+                    <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Customer</th>
+                    <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</th>
+                    <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {RECENT_ORDERS.map((order) => (
+                    <tr key={order.id} className="group hover:bg-slate-50/50">
+                      <td className="py-4 text-sm font-medium text-slate-900">{order.id}</td>
+                      <td className="py-4 text-sm text-slate-600">
+                        {order.customer}
+                        <p className="text-[10px] text-slate-400">{order.date}</p>
+                      </td>
+                      <td className="py-4">
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${
+                          order.status === 'Delivered' ? 'bg-emerald-50 text-emerald-600' : 
+                          order.status === 'Processing' ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'
+                        }`}>
+                          {order.status}
+                        </span>
+                      </td>
+                      <td className="py-4 text-sm font-semibold text-slate-900 text-right">{order.amount}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <button className="w-full mt-4 flex items-center justify-center gap-2 text-sm text-slate-500 hover:text-slate-800 transition-colors">
+                View full order history <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </ChartWrapper>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+```
